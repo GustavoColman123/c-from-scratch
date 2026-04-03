@@ -1,6 +1,11 @@
+Que opinas? Aquí va el de problems 
+
+
 # Problem 1 — File Copy with getchar()
 
 ## The program (final version)
+
+```c
 #include <stdio.h>
 
 int main(void) {
@@ -9,15 +14,18 @@ int main(void) {
         putchar(c);
     return 0;
 }
+```
 
 ## Mistakes I made while getting here
 
 ### Mistake 1 — Used char instead of int
 
 **What I wrote:**
+```c
 char c;
 while ((c = getchar()) != EOF)
     putchar(c);
+```
 
 **What I thought:**
 getchar reads a character so I store it in a char. Makes sense.
@@ -35,10 +43,14 @@ EOF is also -1. The loop exits early on valid data. Silent data corruption.
 **How long it took to understand:** longer than I expected.
 I kept thinking "it probably works in practice." It does — until it doesn't,
 and then you have a bug in a binary file parser with no obvious cause.
+
 ### Mistake 2 — Missing parentheses in while condition
 
 **What I wrote:**
+```c
 while (c = getchar() != EOF)
+```
+
 **What I thought:**
 The assignment happens, then the comparison. Looked fine at a glance.
 
@@ -46,19 +58,23 @@ The assignment happens, then the comparison. Looked fine at a glance.
 Operator precedence: `!=` binds tighter than `=`.
 
 So it evaluates as:
+```c
 while (c = (getchar() != EOF))
+```
 
 `getchar() != EOF` evaluates to 0 or 1 (boolean).
 THAT value gets assigned to `c`.
 
-So C is always 0 or 1, never the actual byte.
+So `c` is always 0 or 1, never the actual byte.
 `putchar(c)` outputs control characters the whole time.
 
 The loop still terminates correctly on EOF — which makes this extra
 confusing to debug. The behavior looks almost right.
 
 **The fix:**
+```c
 while ((c = getchar()) != EOF)
+```
 
 Inner parentheses force assignment before comparison.
 
@@ -68,11 +84,13 @@ Always trace it manually when assignment is inside a condition.
 ### Mistake 3 — getchar() inside the loop body
 
 **What I wrote:**
+```c
 int c = 0;
 while (c != EOF) {
     c = getchar();
     putchar(c);
 }
+```
 
 **What I thought:**
 Reads first, then checks. Same thing, right?
@@ -81,7 +99,7 @@ Reads first, then checks. Same thing, right?
 When getchar() returns EOF, putchar(c) still runs before the loop
 can re-evaluate the condition.
 
-putchar(-1) — the behavior here is implementation-defined.
+`putchar(-1)` — the behavior here is implementation-defined.
 On most systems it outputs something garbage or wraps around.
 Either way it is wrong.
 
@@ -91,7 +109,9 @@ If I had initialized `c` to -1 (EOF), the loop would never enter.
 
 **The fix:**
 Move the read into the condition itself:
+```c
 while ((c = getchar()) != EOF)
+```
 Now getchar(), assignment, and comparison happen atomically in the
 condition. putchar() only runs when c is a valid byte.
 
@@ -116,16 +136,14 @@ press (on now-empty buffer) produces EOF.
 This confused me when I was testing interactively and EOF seemed to arrive
 at the wrong time.
 
----
-
 ### Mistake 5 — Assumed output appears character by character
 
 **What I thought:**
-putchar(c) writes immediately to the screen. Each character appears
+`putchar(c)` writes immediately to the screen. Each character appears
 as it is processed.
 
 **What actually happens:**
-putchar() writes to stdout, which is buffered.
+`putchar()` writes to stdout, which is buffered.
 In interactive terminals, stdout is often line-buffered — output is held
 until a newline is written or the buffer fills.
 
