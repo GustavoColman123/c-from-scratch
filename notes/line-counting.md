@@ -44,3 +44,46 @@ The notation exists for readability.
 ## The precedence trap
 
 while (c = getchar() != EOF)
+Looks correct. Is not.
+
+!= binds tighter than =, so the expression becomes:
+
+c = (getchar() != EOF)
+
+c receives 0 or 1.
+The character is discarded before it can be compared.
+
+The program compiles and runs, but the logic is incorrect.
+The comparison with '\n' never succeeds.
+
+## Open question
+
+If the input does not end with '\n', the last line is not counted.
+A correct implementation would need to detect whether the last character
+before EOF was not a newline.
+
+This likely requires tracking previous input or maintaining state.
+
+Leaving this open until more control structures are introduced.
+
+## Connection to later topics
+
+This is the first filtering pattern in the book:
+read everything, act on some of it.
+
+Word counting will likely extend this idea,
+not by filtering individual characters,
+but by detecting transitions between states.
+
+## Observation
+
+K&R introduces three programs in sequence:
+
+Copy: iteration over a stream
+Character counting: accumulation
+Line counting: conditional filtering
+
+Each program introduces exactly one new idea.
+
+The progression is deliberate.
+Each step builds directly on the previous one.
