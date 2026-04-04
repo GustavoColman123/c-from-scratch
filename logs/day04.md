@@ -69,4 +69,4 @@ at the moment it started.
 
 ## Time
 
-~45 min
+45 min
