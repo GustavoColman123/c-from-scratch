@@ -38,7 +38,6 @@ with no warning from the compiler.
 **Fix**
 for (i = 0; i < 10; ++i)
     digits[i] = 0;
-```
 Global arrays zero-initialize automatically. Local arrays do not.
 The distinction matters here.
 
@@ -46,7 +45,6 @@ The distinction matters here.
 
 **What I wrote**
 ++digits[c - '0'];
-```
 
 **What I thought**
 The subtraction produces the right index for any character.
