@@ -31,11 +31,13 @@ This guarantees the index stays within [0, 9] before the array is accessed.
 
 Why digits[10], not freq[256]
 
-freq[256] would work, but it solves a different problem — arbitrary character frequency. Here the domain is known: exactly 10 digits, each with a logical index.
+freq[256] would work, but it solves a different problem 
+arbitrary character frequency. Here the domain is known: exactly 10 digits, each with a logical index.
 
 digits[3] means "how many times did the digit 3 appear." freq[51] means the same thing, but requires knowing that '3' is ASCII 51. The mapping approach makes the index meaningful.
 
-This is not a memory optimization — it is a modeling decision.
+This is not a memory optimization 
+it is a modeling decision.
 
 ## Key Insight
 
