@@ -115,4 +115,3 @@ The value received by the caller is garbage with no runtime error.
 **Fix**
 Keep the return type in the prototype and the definition identical.
 The prototype is a contract. A contract that does not match the implementation is worse than no contract.
-````
