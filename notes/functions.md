@@ -74,7 +74,6 @@ int base, n;
 {
     ...
 }
-```
 
 The compiler had no way to verify argument types at the call site.
 Type mismatches produced undefined behavior with no warning.
