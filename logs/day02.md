@@ -42,4 +42,4 @@ but rather "does input continue".
 
 ## Time
 
-~30 min
+30 min
