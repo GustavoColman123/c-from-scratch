@@ -1,4 +1,4 @@
-# Longest Line — External Variables and Scope
+# External Variables and Scope
 
 ## Description
 
