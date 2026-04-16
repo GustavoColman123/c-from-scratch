@@ -8,7 +8,7 @@ K&R Chapter 1, section 1.7.
 
 A named, reusable unit of computation.
 It receives input, performs a task, and optionally returns a value.
-The caller does not need to know how it works — only what to give it and what to expect back.
+The caller does not need to know how it works, only what to give it and what to expect back.
 
 ## Prototypes as contracts
 
