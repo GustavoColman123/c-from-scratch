@@ -28,5 +28,3 @@ The program demonstrates two fundamental concepts of C:
 Although C uses call by value, passing an array allows the function
 to modify the original data because the copied value is the address
 of the array's first element.
-
-## Compilation
