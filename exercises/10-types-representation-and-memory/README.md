@@ -1,4 +1,4 @@
-# Character Classifier — Extended Type Analysis
+# types representation and memory
 
 ## Description
 
