@@ -174,3 +174,6 @@ a contract with the compiler, executed on hardware that knows
 nothing about types.
 
 That gap between intent and execution is where bugs live.
+
+## Time
+120 min
