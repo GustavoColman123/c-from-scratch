@@ -14,7 +14,7 @@ with deep study, structured exercises, and honest documentation of mistakes.
 
 ## Progress
 
-Currently working through: **Chapter 1**
+Currently working through: **Chapter 2**
 
 ## Why this repo exists
 
