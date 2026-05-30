@@ -1,186 +1,160 @@
-# types representation and memory
+# Types, Representation, and Memory
 
 ## Description
 
-This program classifies characters from stdin into digits, whitespace,
-and other. It exists here as a vehicle for understanding what types
-in C actually are, not abstractions, but contracts between the
-programmer, the compiler, and the hardware.
+This program explores how C types, constants, and arrays expose representation-level behavior.
 
-## What a type actually is
+It does not implement a K&R exercise directly. Instead, it is a small inspection program built after studying K&R Chapter 2 sections 2.1–2.3:
 
-A type is not a mathematical set. It is a set of promises about memory:
-how many bytes to reserve, how to interpret those bytes, what operations
-the compiler will emit, and what the compiler is allowed to assume.
+- variable names
+- data types and sizes
+- constants
+- character constants
+- integer promotions
+- arrays versus pointers
+- string literals versus mutable arrays
 
-`int x` does not mean "x is an integer." It means: reserve space for
-an integer-sized object, interpret reads as two's complement signed,
-and assume the value never overflows or the program has no defined behavior.
+The goal is not to produce useful output, but to make hidden rules visible.
 
-## Representation
+---
 
-Every type is a bit pattern with an interpretation rule.
+## Build and Run
 
-`char` — one byte. The interpretation of the high bit is
-implementation-defined. On some systems it is signed, on others
-unsigned. This is not a footnote, it determines the behavior of
-every comparison and promotion involving that byte.
+```bash
+gcc -std=c17 -Wall -Wextra -Wpedantic main.c -o type_inspector
+./type_inspector
+```
 
-`int` — typically 32 bits, but the standard only guarantees it is
-at least 16 and no shorter than `short`. The actual size is a
-compiler decision, not a language guarantee.
+---
 
-`float`, `double` — IEEE 754 format, implemented in a separate
-hardware unit. The type determines which unit and which instruction set.
+## What the Program Demonstrates
 
-## Integer promotions
+### 1. Constants are not interchangeable
 
-C does not perform arithmetic on types smaller than `int`.
-Before any arithmetic operation, `char` and `short` are promoted to `int`.
+The program compares:
+
+- `0`
+- `'0'`
+- `'\0'`
+- `"0"`
+- `"\0"`
+
+These look similar but have different types, representations, and meanings.
+
+`'0'` is a character constant with type `int` in C.  
+`'\0'` is also an `int`, but its value is zero.  
+`"0"` and `"\0"` are string literals, not single characters.
+
+---
+
+### 2. Type sizes are implementation-dependent
+
+The program prints `sizeof` results for basic C types.
+
+C guarantees relationships and minimum sizes, not exact universal sizes. For example:
+
+- `sizeof(char)` is always `1`
+- `int` is at least 16 bits
+- `short` is no longer than `int`
+- `int` is no longer than `long`
+
+Modern systems commonly use 8-bit bytes and 32-bit `int`, but portable C code should not blindly depend on that.
+
+---
+
+### 3. Limits reveal representation boundaries
+
+The program prints constants from `<limits.h>` such as:
+
+- `CHAR_MIN`
+- `CHAR_MAX`
+- `SCHAR_MIN`
+- `SCHAR_MAX`
+- `UCHAR_MAX`
+- `INT_MIN`
+- `INT_MAX`
+- `UINT_MAX`
+
+This shows that plain `char` is not guaranteed to be signed or unsigned. Its signedness is implementation-defined.
+
+---
+
+### 4. Integer promotions happen before arithmetic
+
+This expression:
 
 ```c
 unsigned char a = 200;
 unsigned char b = 100;
-unsigned char c = a + b;  // arithmetic in 32 bits, truncation on assignment
+unsigned char c = a + b;
 ```
 
-The addition produces `300` as an `int`. The overflow does not occur
-in 8-bit arithmetic, it occurs when 300 is truncated to 8 bits on
-assignment to `c`. The result is `44`.
+does not perform 8-bit arithmetic.
 
-This surprises programmers who assume the type of the operands
-determines the width of the operation.
+Both operands are promoted before addition. The arithmetic happens as `int`, producing `300`. Only when the result is assigned back to `unsigned char` is it converted modulo 256, producing `44`.
 
-## Overflow
+The important distinction:
 
-Signed integer overflow is undefined behavior. Not "wraps around."
-Not "produces a negative number." Undefined, the compiler may
-eliminate code that assumes it can occur.
+- arithmetic happens after promotion
+- narrowing happens on assignment
+
+---
+
+### 5. Arrays and pointers are not the same object
+
+The program compares:
 
 ```c
-int x = INT_MIN;
-x = -x;  // UB — result is not representable
+const char *p = "hello";
+char s[] = "hello";
 ```
 
-The hardware produces a bit pattern. The compiler may have already
-eliminated the operation based on the assumption that UB never occurs.
+`p` holds the address of a string literal. The literal has static storage duration, and modifying it is undefined behavior.
 
-Unsigned overflow is defined, it wraps modulo 2ⁿ. This is not
-a safety guarantee. It means the truncation is predictable.
-Predictable wrong values are still wrong values.
+`s` is an array initialized with the same characters. It owns its storage and can be modified within its lifetime.
 
-## ABI and calling conventions
+Same visible text. Different memory. Different rules.
 
-`printf` is variadic. Arguments to variadic functions undergo
-default argument promotions before being passed.
+---
 
-`char` — promoted to `int`. If signed, sign extension fills the
-upper bits with the sign bit. If unsigned, zero extension fills
-with zeros. Same bit pattern in the `char`, different `int` value.
+## Key Insight
 
-```c
-char c = 200;       // signed: -56. unsigned: 200.
-printf("%d\n", c);  // signed machine: -56. unsigned machine: 200.
-```
+C types do not fully describe meaning.
 
-The ABI specifies what the callee receives. Promotions are the
-mechanism by which values cross function boundaries.
+A type tells the compiler:
 
-## Aliasing and const
+- how much storage is needed
+- how to interpret stored bits
+- which operations are allowed
+- which conversions may occur
+- which assumptions can be used for optimization
 
-`const` is a type system restriction, not a memory guarantee.
+But a type often does **not** express:
 
-```c
-const int x = 42;
-int *p = (int *)&x;
-*p = 99;
-printf("%d %d\n", x, *p);  // may print: 42 99
-```
+- ownership
+- valid length
+- initialization state
+- null termination
+- encoding
+- aliasing intent
+- lifetime safety
 
-The compiler substitutes `42` for `x` at compile time, the variable
-may never be read from memory. `*p` forces a memory read. Same address,
-two different values printed, because the compiler and the memory
-disagree about what is there.
+Those invariants must be maintained by the programmer.
 
-Strict aliasing compounds this. A pointer of type `float *` pointing
-to an `int` object is undefined behavior, the compiler assumes
-pointers of incompatible types never alias, and optimizes away reads
-that would only matter if they did.
+---
 
-## Storage duration and string literals
+## Important Distinction
 
-```c
-char *p = "hello";  // p points to static read-only storage
-char s[] = "hello"; // s is a mutable copy on the stack
-```
+This program intentionally avoids undefined behavior.
 
-The literal `"hello"` lives in the binary static storage duration,
-entire program lifetime, mapped read-only by the OS.
+It discusses dangerous cases such as writing to string literals or signed integer overflow, but does not execute them. The purpose is to observe defined behavior and use it to reason about the rules behind the language.
 
-`p` holds the address of that region. Writing through `p` is UB
-even on hardware where no fault occurs the compiler assumes
-string literals are never modified and may eliminate code that
-would only matter if they were.
+---
 
-`s` is initialized from the literal but owns its bytes on the stack.
-The copy is writable. The lifetime is the enclosing scope.
+## Source
 
-## Strings, invariants, and `char buf[10]`
+Inspired by:
 
-`char buf[10]` expresses exactly one thing: ten contiguous bytes
-in the current scope.
-
-It does not express:
-- Whether the bytes are initialized
-- Whether a null terminator exists and where
-- How many bytes contain valid data
-- What encoding the bytes represent
-- Whether other pointers alias the same memory
-- Who is responsible for maintaining the null terminator invariant
-
-Every string function in C assumes the null terminator invariant.
-`strlen`, `strcpy`, `printf("%s")` all of them walk forward in
-memory until they find a zero byte. If that byte does not exist
-within the valid region, the behavior is undefined and the read
-continues into adjacent memory.
-
-The invariant is the programmer's contract. The type does not
-enforce it. The compiler does not verify it. The runtime does not
-check it.
-
-## Ownership
-
-C has no ownership system. Ownership is documentation.
-
-```c
-char *p = malloc(10);
-```
-
-`p` holds a valid address. Ten bytes are allocated. Nothing in the
-type records that `p` is responsible for freeing them, that no other
-pointer should outlive the allocation, or that the bytes require
-initialization before use.
-
-When an array is passed to a function, the caller owns the memory.
-The callee receives an address and a length — if the length is passed
-at all. Nothing prevents the callee from writing past the length.
-The ownership contract exists in the programmer's head, not in the
-type system.
-
-## What `int x` actually means
-
-It is not a mathematical statement. It is four simultaneous instructions:
-
-1. Reserve space in the current stack frame, aligned for the target architecture.
-2. Interpret reads from that space as a signed integer in two's complement.
-3. Enable integer arithmetic and comparison operations on that space.
-4. Assume the value is never read before it is written, and never overflows.
-
-The last point is not enforced. It is assumed. If violated, the compiler
-is permitted to emit code that does anything — including code that
-appears correct in testing and fails in production under a different
-optimization level.
-
-The type system in C is a tool for the compiler. The programmer
-benefits from it only insofar as they respect contracts the compiler
-cannot verify.
+- K&R Chapter 2.1 — Variable Names
+- K&R Chapter 2.2 — Data Types and Sizes
+- K&R Chapter 2.3 — Constants
