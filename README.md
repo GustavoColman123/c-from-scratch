@@ -26,6 +26,21 @@ These notes reflect an ongoing learning process and may be revised as my underst
 | `logs/` | Day-by-day learning reflections |
 | `problems/` | Bugs, misconceptions, and corrections |
 
+## Progress
+
+| # | Topic | Exercise |
+|---|-------|----------|
+| 01 | File copy with `getchar()` and `putchar()` | [`01-file-copy`](exercises/01-file-copy/) |
+| 02 | Character counting | [`02-char-count`](exercises/02-char-count/) |
+| 03 | Line counting | [`03-line-count`](exercises/03-line-count/) |
+| 04 | Word counting with state transitions | [`04-word-count`](exercises/04-word-count/) |
+| 05 | Digit frequency with arrays | [`05-digit-frequency`](exercises/05-digit-frequency/) |
+| 06 | Digit frequency histogram | [`06-digit-histogram`](exercises/06-digit-histogram/) |
+| 07 | Functions and prototypes | [`07-power-function`](exercises/07-power-function/) |
+| 08 | Character arrays and longest line | [`08-longest-line`](exercises/08-longest-line/) |
+| 09 | External variables and scope | [`09-external-variables-and-scope`](exercises/09-external-variables-and-scope/) |
+| 10 | Types, representation, and memory | [`10-types-representation-and-memory`](exercises/10-types-representation-and-memory/) |
+
 ## Current focus
 
 **Chapter 2 — Types, Operators, and Expressions**
