@@ -1,6 +1,3 @@
-Que opinas? Aquí va el de problems 
-
-
 # Problem 1 — File Copy with getchar()
 
 ## The program (final version)
