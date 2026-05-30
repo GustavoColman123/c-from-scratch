@@ -1,26 +1,35 @@
 # c-from-scratch
 
-My documented journey learning C from scratch, following **K&R (The C Programming Language, 2nd ed.)** 
-with deep study, structured exercises, and honest documentation of mistakes.
+My documented journey learning C from first principles, following  
+**The C Programming Language, 2nd edition** by Brian Kernighan and Dennis Ritchie.
+
+This repository records my exercises, technical notes, mistakes, and corrections while building a foundation for embedded systems, operating systems, and low-level programming.
+
+## Method
+
+For each topic:
+
+1. Read the relevant K&R section.
+2. Implement the program independently.
+3. Identify mistakes and incorrect assumptions.
+4. Document the reasoning behind each correction.
+5. Connect the concept to systems programming when relevant.
+
+These notes reflect an ongoing learning process and may be revised as my understanding becomes more precise.
 
 ## Structure
 
 | Folder | Contents |
 |--------|----------|
-| `exercises/` | Programs written while working through K&R chapters |
-| `notes/` | Concepts, explanations, and key takeaways |
-| `logs/` | Day-by-day study logs |
-| `problems/` | Bugs, misconceptions, and how I solved them |
+| `exercises/` | Programs written while progressing through K&R |
+| `notes/` | Technical explanations and reusable concepts |
+| `logs/` | Day-by-day learning reflections |
+| `problems/` | Bugs, misconceptions, and corrections |
 
-## Progress
+## Current focus
 
-Currently working through: **Chapter 2**
+**Chapter 2 — Types, Operators, and Expressions**
 
-## Why this repo exists
+## Resource
 
-C is the foundation I need for embedded systems, OS development, and hardware projects. 
-This repo is my accountability system, every session logged, every mistake kept.
-
-## Resources
-
-- *The C Programming Language* — Kernighan & Ritchie (K&R), 2nd ed.
+- *The C Programming Language*, 2nd edition — Brian Kernighan and Dennis Ritchie
