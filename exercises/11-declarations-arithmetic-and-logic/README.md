@@ -59,7 +59,7 @@ constant    = 10
 ```
 
 `persistent` is zero because static variables are zero-initialized before `main`.
-`constant` is a typed object in memory — not a macro substitution.
+`constant` is a typed object, not a macro substitution.
 
 ### Section 2 — Integer Division and Modulus
 
@@ -70,7 +70,7 @@ constant    = 10
 -7 % 3
 ```
 
-Also demonstrates the invariant that must always hold:
+Also demonstrates the invariant that must hold when `b != 0`:
 
 ```c
 (a / b) * b + (a % b) == a
@@ -96,7 +96,8 @@ Expected output:
 0
 ```
 
-Relational expressions evaluate to `1` (true) or `0` (false). C has no boolean type here — only integers.
+Relational expressions evaluate to `1` (true) or `0` (false).
+Traditional K&R-style C represents boolean results as integers. Modern C also provides `_Bool` and `<stdbool.h>`.
 
 ### Section 4 — Logical Operators
 
@@ -125,38 +126,54 @@ printf("%d\n", (0 < x) && (x < 10));
 Expected output:
 
 ```text
-0 < x < 10         => 1
-(0 < x) && (x < 10)=> 0
+0 < x < 10           => 1
+(0 < x)&&(x < 10)    => 0
 ```
 
 `0 < x < 10` does not work like mathematics. C evaluates it as `(0 < x) < 10`,
-which reduces to `1 < 10` — always true. The correct form requires two explicit comparisons joined by `&&`.
+which reduces to either `0 < 10` or `1 < 10` — both true. The correct form requires two explicit comparisons joined by `&&`.
 
 ## Example Output
 
 ```text
+=== Section 1: Declarations ===
+
 initialized = 42
 persistent  = 0
 constant    = 10
+
+=== Section 2: Arithmetic Operators ===
 
 7 / 3   =  2
 -7 / 3  = -2
 7 % 3   =  1
 -7 % 3  = -1
-(a/b)*b + (a%b) = a => verified
+(a/b)*b + (a%b) = 7
+identity holds   = 1
 
-5 > 3   = 1
-5 < 3   = 0
-5 == 5  = 1
-5 != 5  = 0
+=== Section 3: Relational Operators ===
+
+5 > 3  = 1
+5 < 3  = 0
+5 == 5 = 1
+5 != 5 = 0
+
+=== Section 4: Logical Operators ===
 
 valid && error = 0
 valid || error = 1
 !valid         = 0
 !error         = 1
 
-0 < x < 10         => 1
-(0 < x) && (x < 10)=> 0
+=== Section 5: Chained Comparison Trap ===
+
+x = 20
+0 < x < 10            => 1
+(0 < x)&&(x < 10)     => 0
+
+x = 5
+0 < x < 10            => 1
+(0 < x)&&(x < 10)     => 1
 ```
 
 ## Key Observations
@@ -168,7 +185,7 @@ valid || error = 1
 - `%` works only with integer operands.
 - Relational expressions evaluate to `0` or `1`.
 - Logical operators use short-circuit evaluation.
-- Expression meaning depends heavily on precedence rules.-
+- Expression meaning depends heavily on precedence rules.
 
 ## Lessons Learned
 
@@ -178,7 +195,6 @@ valid || error = 1
 - Boolean logic in C is represented with integers.
 - Parentheses improve correctness and readability.
 - Understanding evaluation order prevents subtle bugs.
-
 
 ## Related Notes
 
