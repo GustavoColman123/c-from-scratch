@@ -40,10 +40,15 @@ These notes reflect an ongoing learning process and may be revised as my underst
 | 08 | Character arrays and longest line | [`08-longest-line`](exercises/08-longest-line/) |
 | 09 | External variables and scope | [`09-external-variables-and-scope`](exercises/09-external-variables-and-scope/) |
 | 10 | Types, representation, and memory | [`10-types-representation-and-memory`](exercises/10-types-representation-and-memory/) |
+| 11 | Declarations, arithmetic operators, and logical expressions | [`11-declarations-arithmetic-and-logic`](exercises/11-declarations-arithmetic-and-logic/) |
+| 12 | Expression mechanics and operators | [`12-expression-mechanics-and-operators`](exercises/12-expression-mechanics-and-operators/) |
+| 13 | Control flow mechanics | [`13-control-flow-mechanics`](exercises/13-control-flow-mechanics/) |
 
 ## Current focus
 
-**Chapter 2 — Types, Operators, and Expressions**
+**Chapter 3 — Control Flow**
+
+Completed through statements, blocks, conditional branching, `switch`, loops, `break`, and `continue`.
 
 ## Resource
 
