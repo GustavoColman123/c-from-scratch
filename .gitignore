@@ -1,0 +1,5 @@
+
+# Build artifacts
+demo
+*.out
+*.o
