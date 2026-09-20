@@ -22,21 +22,33 @@ I assumed I could modify the characters in place.
 
 **What actually happens**
 
-The elements of `pointer_commands` point to string literals.
-
-String literals must not be modified.
-
-Attempting to modify a string literal produces undefined behavior.
-
-On many modern systems, string literals are placed in non-writable storage, so such an operation often crashes, but a segmentation fault is not guaranteed by C.
-
-The declaration also uses:
+The declaration uses:
 
 ```c
 const char *const
 ```
 
-which means both the pointed characters and the stored pointer values are treated as non-modifiable through this declaration.
+so the expression `pointer_commands[0][0]` is reached through a pointer-to-const-character type.
+
+Trying to assign through that expression violates the `const`-qualified interface and requires a compiler diagnostic.
+
+That is separate from the underlying rule about string literals.
+
+For example, C can still allow a declaration such as:
+
+```c
+char *p = "help";
+```
+
+but attempting:
+
+```c
+p[0] = 'H';
+```
+
+tries to modify a string literal and produces undefined behavior.
+
+Many implementations place string literals in non-writable storage, so that second case often crashes, but a segmentation fault is not guaranteed by C.
 
 **Fix**
 
@@ -183,16 +195,20 @@ while (cursor < end) {
 }
 ```
 
-To walk through characters inside one argument:
+To walk through characters inside one argument, the argument must exist first:
 
 ```c
-char *cursor = argv[1];
+if (argc > 1) {
+    char *cursor = argv[1];
 
-while (*cursor != '\0') {
-    printf("%c\n", *cursor);
-    cursor++;
+    while (*cursor != '\0') {
+        printf("%c\n", *cursor);
+        cursor++;
+    }
 }
 ```
+
+The `argc > 1` condition is required before using `argv[1]`. If `argc == 1`, then `argv[1]` is the null sentinel `argv[argc]`.
 
 **Lesson**
 
@@ -320,6 +336,105 @@ A lookup function that may return `NULL` establishes a contract.
 
 The caller must verify success before accessing the returned object or invoking behavior through it.
 
+## Problem 6 — Printing a command failure but returning process success
+
+**What I wrote**
+
+The command dispatcher returned a failure correctly:
+
+```c
+int result = execute_command(commands, command_count, argv[i]);
+printf("return code = %d\n", result);
+```
+
+but `main` always ended with:
+
+```c
+return 0;
+```
+
+**What I thought**
+
+I treated printing `return code = 1` as if that automatically communicated failure to the operating system.
+
+**What actually happens**
+
+The handler result is only an ordinary C value until `main` uses it as part of the process exit status.
+
+Therefore:
+
+```bash
+./demo reboot
+echo "$?"
+```
+
+could print an internal failure while the shell still received `0` and interpreted the whole process as successful.
+
+Keeping only the final command result is also insufficient. A sequence such as:
+
+```bash
+./demo reboot status
+```
+
+must not hide the earlier failure just because `status` succeeds afterward.
+
+**Fix**
+
+Execute every requested command while preserving the first non-zero result:
+
+```c
+int overall_status = 0;
+
+for (int i = 1; i < argc; i++) {
+    int result = execute_command(commands, command_count, argv[i]);
+
+    if (result != 0 && overall_status == 0) {
+        overall_status = result;
+    }
+}
+
+return overall_status;
+```
+
+**Lesson**
+
+Printed diagnostics and process exit status are different interfaces.
+
+If scripts or shells need to observe failure, `main` must propagate a non-zero status.
+
+## Problem 7 — Treating `sizeof` as total storage usage
+
+**What I wrote / observed**
+
+```text
+pointer_commands storage = 24 bytes
+fixed_commands storage   = 48 bytes
+```
+
+**What I thought**
+
+I was close to treating `24 vs 48` as evidence that the pointer-array representation used half as much total memory.
+
+**What actually happens**
+
+`sizeof pointer_commands` measures only the array object that stores the pointer values.
+
+It does not include the storage occupied by the string literals referenced by those pointers.
+
+`sizeof fixed_commands`, on the other hand, measures the complete `char[3][16]` object because the character rows live inside the array itself.
+
+Also, the 24-byte pointer-array result is implementation-dependent because pointer size is implementation-dependent.
+
+The 48-byte `char[3][16]` result is not implementation-dependent: `sizeof(char)` is defined as `1`, so `3 * 16` character elements occupy 48 bytes.
+
+**Fix**
+
+Describe the values as the sizes of the array objects being measured, not as total memory consumption of the complete representations.
+
+**Lesson**
+
+`sizeof` measures the object named by its operand. It does not recursively include separately stored objects reached through pointers.
+
 ## Hidden invariants
 
 * String literals must not be modified.
@@ -335,6 +450,9 @@ The caller must verify success before accessing the returned object or invoking 
 * Lookup functions may return `NULL`.
 * A null pointer must not be dereferenced.
 * Function-pointer dispatch requires a successful lookup before invocation.
+* Process-level failure must be propagated through `main` if callers are expected to observe it.
+* `sizeof` on a pointer array does not include separately stored pointed-to objects.
+* Returned pointers remain valid only while the objects they point into remain alive.
 
 ## Summary of corrections
 
@@ -345,6 +463,16 @@ The caller must verify success before accessing the returned object or invoking 
 | Treating `argv` as `char *` | `argv` is a pointer-to-pointer; each element points to one string |
 | Using `sizeof` on an array parameter | Array parameters are adjusted to pointers and lose array extent |
 | Dereferencing failed lookup | Check for `NULL` before accessing the result or invoking its handler |
+| Printing an error but returning `0` from `main` | Preserve a non-zero result and return it as the process status |
+| Comparing `sizeof` values as total memory usage | Distinguish the array object itself from separately stored pointed-to objects |
+
+## Post-implementation review
+
+Problems 6 and 7, along with the missing `argc > 1` precondition and the sharper `const` distinction in Problem 1, were identified during an extended post-implementation review performed with GPT-6 Astra.
+
+The value of that review was not that an AI answer was automatically accepted. The findings were useful because they produced concrete claims that could be checked against the program's behavior and C's pointer, array, and process-exit rules.
+
+This is the review model used for this repository: AI can challenge the implementation, but understanding and verification remain part of the exercise.
 
 ## Final observation
 

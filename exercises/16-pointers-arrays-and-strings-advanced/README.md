@@ -14,6 +14,13 @@ It covers:
 * 5.11 Pointers to Functions
 * 5.12 Complicated Declarations
 
+### AI-assisted review
+
+* GPT-6 Astra — extended post-implementation review of Day 16, used to identify candidate defects and missing contracts.
+* ChatGPT — tutoring, review synthesis, documentation refinement, and verification planning.
+
+AI review output is not treated as a normative C source. Technical claims are expected to be checked against program behavior and the language rules.
+
 The main goal is to understand how C can organize both data and executable behavior through typed pointers.
 
 Day 15 focused on reaching objects through addresses.
@@ -189,7 +196,19 @@ fixed_commands[0][0] = 'H';
 
 is valid because the fixed array contains writable characters.
 
-The measured storage sizes are implementation-dependent.
+`sizeof pointer_commands` measures only the pointer-array object itself. It does not include the storage occupied by the string literals that those pointers reference.
+
+`sizeof fixed_commands` measures the complete `char [3][16]` array object. Because `sizeof(char)` is defined as `1`, this object occupies exactly 48 bytes.
+
+The size of the pointer-array object depends on the implementation's pointer size, so a result such as 24 bytes must not be interpreted as the total storage cost of the pointed-to strings.
+
+The exercise also demonstrates a pointer to one complete row:
+
+```c
+char (*row)[16] = fixed_commands;
+```
+
+`row++` advances by one `char[16]` row. This is a direct demonstration that `char **` and `char (*)[16]` are different pointer types with different traversal rules.
 
 ### Section 4 — Command-line Arguments
 
@@ -314,6 +333,24 @@ Run with commands:
 ./demo help status version reboot
 ```
 
+Check process exit-status propagation:
+
+```bash
+./demo help status
+echo "$?"
+
+./demo reboot
+echo "$?"
+
+./demo reboot status
+echo "$?"
+
+./demo ""
+echo "$?"
+```
+
+The first execution should exit with `0`. The other three should exit with a non-zero status. The program continues executing all requested commands but preserves the first failure as the process exit status.
+
 Remove the generated binary before committing:
 
 ```bash
@@ -408,6 +445,18 @@ return code = 1
 * Function pointers allow runtime behavior selection through data structures.
 * Concrete pointer sizes are implementation-dependent.
 
+## Contracts and Preconditions
+
+The helper functions in this exercise intentionally rely on explicit contracts rather than attempting to validate every possible misuse.
+
+* String parameters passed to `string_equal`, `find_name`, and command lookup functions must point to readable null-terminated strings.
+* A `(pointer, count)` traversal requires the pointer to refer to an array object with at least `count` accessible elements.
+* The current `cursor = items; end = items + count;` pattern does not define `(NULL, 0)` as a supported input contract.
+* Every command-table entry used for execution must contain a valid name and a non-null function pointer with a compatible type.
+* `find_command` returns a borrowed pointer into the caller's table. It does not create a copy and does not extend the table's lifetime.
+
+These contracts matter even when a program compiles cleanly and passes sanitizer runs for the tested inputs.
+
 ## Connection to Systems Programming
 
 This exercise is directly connected to systems programming.
@@ -439,6 +488,18 @@ This exercise does not implement those mechanisms.
 
 It introduces the pointer and dispatch patterns that future NucleOS code can build upon.
 
+## AI-assisted review
+
+After the first Day 16 implementation was published, GPT-6 Astra performed an extended review of the code and documentation.
+
+That review identified issues that had survived the initial implementation and review pass, including process exit-status propagation, an unstated `argc > 1` precondition in a documentation example, incomplete pointer/count and lifetime contracts, and an over-broad interpretation of the `sizeof` comparison.
+
+The review also suggested demonstrating `char (*)[16]` directly. The findings were treated as review hypotheses, checked against the program and C language rules, and then incorporated into this follow-up correction.
+
+This is the intended role of AI in this repository: not as a substitute for understanding or as a language specification, but as a reviewer that can challenge assumptions, propose counterexamples, and expose missing contracts that must still be verified by the programmer.
+
+One design issue is intentionally deferred: `run_help` duplicates command names that already exist in the dispatch table. Removing that duplication cleanly requires reconsidering the handler interface so that help can receive command-table context. That is better addressed in a later structures or capstone exercise than by introducing a global variable here.
+
 ## Lessons Learned
 
 Day 16 showed that pointers are useful for more than accessing memory.
@@ -453,7 +514,9 @@ typed pointers establish explicit relationships between parts of a program
 
 The main lesson is that advanced pointer code becomes manageable when every level of indirection, every array boundary, and every function type is treated as an explicit contract.
 
-## Source
+## Sources and review assistance
+
+### Technical source
 
 Kernighan & Ritchie, Chapter 5:
 

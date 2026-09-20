@@ -186,9 +186,9 @@ int main(int argc, char *argv[])
         "version"
     };
 
-    printf("pointer_commands storage = %zu bytes\n",
+    printf("pointer_commands array object = %zu bytes\n",
            sizeof pointer_commands);
-    printf("fixed_commands storage   = %zu bytes\n",
+    printf("fixed_commands array object   = %zu bytes\n",
            sizeof fixed_commands);
 
     printf("pointer_commands[0] = %s\n", pointer_commands[0]);
@@ -196,7 +196,16 @@ int main(int argc, char *argv[])
 
     fixed_commands[0][0] = 'H';
 
-    printf("fixed_commands[0] after  = %s\n\n", fixed_commands[0]);
+    printf("fixed_commands[0] after  = %s\n", fixed_commands[0]);
+
+    char (*row)[16] = fixed_commands;
+
+    printf("sizeof *row = %zu bytes\n", sizeof *row);
+    printf("*row = %s\n", *row);
+
+    row++;
+
+    printf("after row++, *row = %s\n\n", *row);
 
     printf("=== Section 4: Command-line Arguments ===\n\n");
 
@@ -253,6 +262,8 @@ int main(int argc, char *argv[])
 
     printf("=== Section 8: Mini Shell-style Dispatch ===\n\n");
 
+    int overall_status = 0;
+
     if (argc <= 1) {
         printf("no command-line commands provided\n");
         printf("running default command sequence\n\n");
@@ -261,17 +272,30 @@ int main(int argc, char *argv[])
 
         result = execute_command(commands, command_count, "help");
         printf("return code = %d\n\n", result);
+        if (result != 0 && overall_status == 0) {
+            overall_status = result;
+        }
 
         result = execute_command(commands, command_count, "status");
         printf("return code = %d\n\n", result);
+        if (result != 0 && overall_status == 0) {
+            overall_status = result;
+        }
 
         result = execute_command(commands, command_count, "version");
         printf("return code = %d\n", result);
+        if (result != 0 && overall_status == 0) {
+            overall_status = result;
+        }
     } else {
         for (int i = 1; i < argc; i++) {
             int result = execute_command(commands, command_count, argv[i]);
 
             printf("return code = %d\n", result);
+
+            if (result != 0 && overall_status == 0) {
+                overall_status = result;
+            }
 
             if (i + 1 < argc) {
                 printf("\n");
@@ -279,5 +303,5 @@ int main(int argc, char *argv[])
         }
     }
 
-    return 0;
+    return overall_status;
 }

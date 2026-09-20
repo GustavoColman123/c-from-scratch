@@ -146,13 +146,25 @@ valid.
 On the machine used for this exercise, the output was:
 
 ```text
-pointer_commands storage = 24 bytes
-fixed_commands storage   = 48 bytes
+pointer_commands array object = 24 bytes
+fixed_commands array object   = 48 bytes
 ```
 
 The `24`-byte result reflects the pointer size on this particular implementation.
 
 C does not guarantee that pointers are always 8 bytes.
+
+More importantly, `sizeof pointer_commands` measures only the pointer-array object. It does not include the storage occupied by the pointed-to string literals.
+
+`sizeof fixed_commands` measures the complete `char[3][16]` object, so its 48-byte size is fixed by the definition that `sizeof(char) == 1`.
+
+The follow-up correction also added:
+
+```c
+char (*row)[16] = fixed_commands;
+```
+
+to demonstrate directly that `row++` advances by one complete 16-character row and that a pointer to an array is not a pointer to pointer.
 
 ### Section 4 — Command-line Arguments
 
@@ -253,6 +265,8 @@ command->handler();
 
 If the lookup fails, the function reports the unknown command and returns a non-zero status code.
 
+The corrected `main` now preserves the first non-zero command result while continuing to execute the remaining commands, then returns that preserved status to the operating system.
+
 This combines:
 
 ```text
@@ -266,6 +280,27 @@ function pointer
     ↓
 indirect function call
 ```
+
+## Post-implementation AI-assisted review
+
+After the original Day 16 commit was published, GPT-6 Astra performed an extended review of the code, notes, README, and problems.
+
+The review reported clean compiler and sanitizer results for the tested paths, but correctly emphasized that those results did not prove the program's interfaces or semantics were fully correct.
+
+It identified several issues that survived the initial implementation and review:
+
+* `main` printed command failures but still returned process success
+* the `argv[1]` teaching example omitted the required `argc > 1` precondition
+* the documentation did not state pointer/count, string, handler, and lifetime contracts explicitly enough
+* the `sizeof` comparison could be mistaken for a total-memory comparison
+* pointer-to-array syntax was explained but not demonstrated directly in the program
+* the help text duplicates command names already present in the dispatch table
+
+The first five items were addressed in this correction pass.
+
+The duplicated help text is intentionally deferred. Solving it cleanly requires changing how handlers receive context from the command table, which belongs more naturally in a later structures or capstone exercise than in a quick patch using global state.
+
+The review findings were treated as hypotheses to verify, not as authoritative facts merely because they came from an AI model.
 
 ## Example output
 
@@ -290,11 +325,14 @@ pointer-to-pointer walk: kernel memory scheduler
 
 === Section 3: Pointer Array vs Fixed 2D Array ===
 
-pointer_commands storage = 24 bytes
-fixed_commands storage   = 48 bytes
+pointer_commands array object = 24 bytes
+fixed_commands array object   = 48 bytes
 pointer_commands[0] = help
 fixed_commands[0] before = help
 fixed_commands[0] after  = Help
+sizeof *row = 16 bytes
+*row = Help
+after row++, *row = status
 
 === Section 4: Command-line Arguments ===
 
@@ -338,6 +376,27 @@ return code = 0
 unknown command: reboot
 return code = 1
 ```
+
+## Exit-status verification
+
+The correction pass added explicit shell-level checks:
+
+```text
+./demo help status    -> 0
+./demo reboot         -> non-zero
+./demo reboot status  -> non-zero
+./demo ""             -> non-zero
+```
+
+The important case is `reboot status`: later success must not erase an earlier failure.
+
+This exposed a distinction I had previously missed:
+
+```text
+handler return value != process exit status
+```
+
+until `main` deliberately propagates that value.
 
 ## What clicked
 
@@ -442,6 +501,16 @@ Day 16 does not implement those mechanisms.
 
 It establishes the pointer and dispatch concepts that such systems can build upon.
 
+## Review lesson
+
+The most important lesson from the follow-up review was that clean compilation, expected console output, and sanitizer-clean test cases are evidence about tested behavior, not proof that a program's API contracts or process semantics are correct.
+
+The original program visibly printed `return code = 1` for an unknown command while still telling the shell that the overall process succeeded.
+
+That is exactly the kind of semantic mismatch a deeper review should find.
+
+Using AI as an adversarial reviewer was useful because it challenged assumptions that had survived the first pass. The corrections still had to be understood and verified rather than copied blindly.
+
 ## Final reflection
 
 Day 16 bridged low-level pointer handling with systems organization.
@@ -456,4 +525,4 @@ This moves the project from basic pointer manipulation toward modular, table-dri
 
 ## Time
 
-4 hours — reading, conceptual review, implementation, output testing, problems, notes, and documentation.
+4 hours for the initial Day 16 work, followed by a separate post-implementation AI-assisted review and correction pass that was not timed.

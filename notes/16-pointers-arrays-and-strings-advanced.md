@@ -1,6 +1,8 @@
 # Notes — Pointers, Arrays, and Strings (Advanced)
 
-## Source
+## Sources and review context
+
+### Technical source
 
 K&R Chapter 5.
 
@@ -318,6 +320,48 @@ char *commands[] = {
 ```
 
 The important distinction is the type and ownership of the pointed objects.
+
+`sizeof` also measures different things in these two representations.
+
+For:
+
+```c
+const char *const pointer_commands[] = {
+    "help",
+    "status",
+    "version"
+};
+```
+
+`sizeof pointer_commands` measures the array object containing three pointer values. It does not include the bytes occupied by the pointed-to string literals.
+
+For:
+
+```c
+char fixed_commands[][16] = {
+    "help",
+    "status",
+    "version"
+};
+```
+
+`sizeof fixed_commands` measures the entire `char[3][16]` object. Since `sizeof(char)` is always `1`, this array occupies exactly 48 bytes.
+
+A pointer to one row can be declared as:
+
+```c
+char (*row)[16] = fixed_commands;
+```
+
+Here, `row` points to a `char[16]` object. Therefore:
+
+```c
+row++;
+```
+
+advances to the next complete 16-character row.
+
+This is not equivalent to `char **`.
 
 ## 7. Command-line arguments
 
@@ -664,7 +708,47 @@ indirect function call
 
 The integer returned by the handler can act as a status code.
 
-## 14. Connection to NucleOS
+## 14. Contracts, bounds, and lifetimes
+
+Pointer-heavy interfaces are only correct when their preconditions are understood.
+
+For the helper functions used in this exercise:
+
+* `string_equal(left, right)` requires both pointers to refer to readable null-terminated strings.
+* Functions that receive `(pointer, count)` require at least `count` accessible elements beginning at that pointer.
+* The current `items + count` end-pointer pattern assumes `items` points into a valid array object; `(NULL, 0)` is not part of the supported contract.
+* Command entries used for execution must contain valid, compatible handler pointers.
+* `find_command` returns `&commands[i]`, which is a borrowed pointer into the caller's table. It remains valid only while that table object remains alive.
+* `const` restricts modification through a type; it does not extend object lifetime.
+
+These are semantic contracts. A compiler warning configuration or sanitizer can detect many classes of errors, but passing those tools does not prove that an interface communicates the right semantics.
+
+## 15. Process exit status
+
+A command handler's return value and the process exit status are separate layers unless `main` propagates the result.
+
+The initial Day 16 implementation printed a command failure but still ended with:
+
+```c
+return 0;
+```
+
+That meant the shell observed success even after an unknown command.
+
+The corrected implementation executes all requested commands while preserving the first non-zero result and returning it from `main`.
+
+This makes:
+
+```text
+./demo help status    -> process success
+./demo reboot         -> process failure
+./demo reboot status  -> process failure
+./demo ""             -> process failure
+```
+
+The important lesson is that printed diagnostics are not a substitute for a correct process-level contract.
+
+## 16. Connection to NucleOS
 
 Day 16 is directly relevant to future NucleOS architecture.
 
@@ -702,6 +786,28 @@ Day 16 does not implement those systems.
 
 It introduces the underlying idea of representing behavior through typed function-pointer tables.
 
+## 17. AI-assisted review
+
+After the initial Day 16 implementation was published, GPT-6 Astra performed an extended post-implementation review.
+
+The review exposed several issues that had survived the first coding and documentation pass:
+
+* command failures were printed but not propagated through `main`
+* one `argv[1]` example omitted the `argc > 1` precondition
+* pointer/count and object-lifetime contracts were not explicit enough
+* the `sizeof` comparison could be mistaken for a total-memory comparison
+* pointer-to-array syntax was documented but not demonstrated directly
+
+The findings were not treated as authoritative simply because they came from an AI system. They were used as hypotheses to verify against the code and the C rules.
+
+This review cycle reinforced a useful learning workflow:
+
+```text
+write -> reason -> test -> review -> challenge -> verify -> correct
+```
+
+AI is most useful here as an adversarial reviewer and learning aid. The programmer remains responsible for understanding the contracts and verifying the correction.
+
 ## Practical takeaways
 
 1. Arrays can store pointers as elements.
@@ -720,6 +826,9 @@ It introduces the underlying idea of representing behavior through typed functio
 14. Lookup functions may use `NULL` to represent failure.
 15. Dispatch tables map data identifiers to executable behavior.
 16. Complicated declarations should be read from the identifier outward.
+17. `sizeof` on a pointer array does not include the storage of pointed-to objects.
+18. A process-level error must be propagated through `main` if the shell is expected to observe failure.
+19. Pointer correctness includes bounds and lifetime contracts, not only type correctness.
 
 ## Final observation
 
